@@ -60,6 +60,12 @@ class RecordsList:
     def sort_by_marks(self):
         self.records = sorted(self.__records, key=lambda r: r.marks)
 
+    def sort_by_number_courses(self):
+        self.records = sorted(self.__records, key=lambda r: r.number_courses)
+
+    def sort_by_time_study(self):
+        self.records = sorted(self.__records, key=lambda r: r.marks)
+
     def load(self, file: str):
         records = []
         with open(file) as f:
