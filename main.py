@@ -392,6 +392,6 @@ if __name__ == "__main__":
     # print(n_linear_regression(data))
     # distance_field_test()
     # linear_reg_test()
-    #bi_linear_reg_test()
+    # bi_linear_reg_test()
     poly_reg_test()
 
