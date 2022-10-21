@@ -1,71 +1,30 @@
-import matplotlib.pyplot as plt
+import random
 from typing import Tuple
+
+import matplotlib.pyplot as plt
 import numpy as np
 
 
-def test_data(k: float = 1.0, b: float = 0.1, half_disp: float = 0.05, n: int = 100, x_step: float = 0.01) -> \
-        Tuple[np.ndarray, np.ndarray]:
-    """
-    Генерируюет линию вида y = k*x + b + dy, где dy - аддитивный шум с амплитудой half_disp
-    :param k: наклон линии
-    :param b: смещение по y
-    :param half_disp: амплитуда разброса данных
-    :param n: количество точек
-    :param x_step: шаг между соседними точками
-    :return: кортеж значенией по x и y
-    """
-    import random
-    return np.array([i * x_step for i in range(n + 1)]), \
-           np.array([np.exp(-(i * x_step * k) ** 2) + b + random.uniform(-half_disp, half_disp) for i in range(n + 1)])
+def test_data(k: float = 1.0, b: float = 0.1, rand_range: float = 10.0, n: int = 100) -> (np.array, np.array):
+    return np.array([i / n for i in range(n)]), \
+           np.array([b + k * i + random.uniform(-rand_range * 0.5, rand_range * 0.5) for i in range(n)])
 
 
-def test_data_2d(kx: float = -2.0, ky: float = 2.0, b: float = 12.0, half_disp: float = 1.01, n: int = 100,
-                 x_step: float = 0.01, y_step: float = 0.01) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def test_data_2d(kx: float = -2.0, ky: float = 2.0, b: float = 12.0, rand_range: float = 100.0, n: int = 100) -> \
+        (np.ndarray, np.ndarray, np.ndarray):
     """
     Генерирует плоскость вида z = kx*x + ky*x + b + dz, где dz - аддитивный шум с амплитудой half_disp
     :param kx: наклон плоскости по x
     :param ky: наклон плоскости по y
     :param b: смещение по z
-    :param half_disp: амплитуда разброса данных
+    :param rand_range: амплитуда разброса данных
     :param n: количество точек
-    :param x_step: шаг между соседними точками по х
-    :param y_step: шаг между соседними точками по y
     :returns: кортеж значенией по x, y и z
     """
-    import random
-    x = np.array([random.uniform(0.0, n * x_step) for i in range(n)])
-    y = np.array([random.uniform(0.0, n * y_step) for i in range(n)])
-    dz = np.array([b + random.uniform(-half_disp, half_disp) for i in range(n)])
+    x = np.array([random.uniform(0.0, n * 1.) for i in range(n)])
+    y = np.array([random.uniform(0.0, n * 1.) for i in range(n)])
+    dz = np.array([b + random.uniform(-rand_range * 0.5, rand_range * 0.5) for i in range(n)])
     return x, y, x * kx + y * ky + dz
-
-
-def test_data_nd(surf_settings: np.ndarray = np.array([1.0, 1.0, 1.0]), vals_range: float = 1.0, half_disp: float = 0.05, n_pts: int = 5) ->\
-        np.ndarray:
-    """
-    Генерирует плоскость вида z = kx*x + ky*x + b + dz, где dz - аддитивный шум с амплитудой half_disp
-    :param kx: наклон плоскости по x
-    :param ky: наклон плоскости по y
-    :param b: смещение по z
-    :param half_disp: амплитуда разброса данных
-    :param n: количество точек
-    :param x_step: шаг между соседними точками по х
-    :param y_step: шаг между соседними точками по y
-    :returns: кортеж значенией по x, y и z
-    """
-    import random
-    # surf_settings = [nx,ny,nz,d]
-
-    data = np.zeros((n_pts, surf_settings.size,), dtype=float)
-
-    for i in range(surf_settings.size - 1):
-        data[:, i] = np.array([random.uniform(0.0, vals_range) for k in range(n_pts)])
-        data[:, surf_settings.size - 1] += surf_settings[i] * data[:, i]
-
-    dz = np.array([random.uniform(-half_disp, half_disp) for i in range(n_pts)])
-
-    data[:, surf_settings.size - 1] += surf_settings[surf_settings.size - 1] + dz
-
-    return data
 
 
 def distance_sum(x: np.ndarray, y: np.ndarray, k: float, b: float) -> float:
@@ -134,10 +93,11 @@ def linear_regression(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
     sum_x = np.sum(x)
     sum_y = np.sum(y)
     sum_xy = np.sum(x * y)
-    sum_xx = np.sum(x * x)
-    n = x.size
+    sum_xx = np.sum(x ** 2)
+    n = len(x)
     k = (sum_xy - sum_x * sum_y / n) / (sum_xx - sum_x * sum_x / n)
-    return k, (sum_y - k * sum_x) / n
+    b = (sum_y - k * sum_x) / n
+    return k, b
 
 
 def bi_linear_regression(x: np.ndarray, y: np.ndarray, z: np.ndarray) -> Tuple[float, float, float]:
@@ -199,28 +159,24 @@ def bi_linear_regression(x: np.ndarray, y: np.ndarray, z: np.ndarray) -> Tuple[f
     sum_y = np.sum(y)
     sum_z = np.sum(z)
     sum_xy = np.sum(x * y)
-    sum_xx = np.sum(x * x)
-    sum_yy = np.sum(y * y)
+    sum_xx = np.sum(x ** 2)
+    sum_yy = np.sum(y ** 2)
     sum_zy = np.sum(z * y)
     sum_zx = np.sum(z * x)
-    n = x.size
+    n = len(x)
 
     hesse = np.array([[sum_xx, sum_xy, sum_x],
                       [sum_xy, sum_yy, sum_y],
-                      [sum_x,  sum_y,  n]])
-    hesse = np.linalg.inv(hesse)
+                      [sum_x, sum_y, n]])
 
-    dkx = sum_xy + sum_xx - sum_zx
-    dky = sum_yy + sum_xy - sum_zy
-    db  =  sum_y +  sum_x - sum_z
+    grad = np.array([sum_xy + sum_xx - sum_zx,
+                     sum_yy + sum_xy - sum_zy,
+                     sum_y + sum_x - sum_z])
 
-    return 1.0 - (hesse[0][0] * dkx + hesse[0][1] * dky + hesse[0][2] * db),\
-           1.0 - (hesse[1][0] * dkx + hesse[1][1] * dky + hesse[1][2] * db),\
-               - (hesse[2][0] * dkx + hesse[2][1] * dky + hesse[2][2] * db)
+    return np.array([1, 1, 0]) - np.linalg.inv(hesse) @ grad
 
 
 def n_linear_regression(data_rows: np.ndarray) -> np.ndarray:
-
     """
     H_ij = Σx_i * x_j, i in [0, rows - 1] , j in [0, rows - 1]
     H_ij = Σx_i, j = rows i in [rows, :]
@@ -287,7 +243,7 @@ def poly_regression(x: np.ndarray, y: np.ndarray, order: int = 5) -> np.ndarray:
     for row in range(order):
         c_m[row] = np.sum(y * (x ** row)) / n
         for col in range(row + 1):
-            a_m[row][col] = np.sum(x**(col + row)) / n
+            a_m[row][col] = np.sum(x ** (col + row)) / n
             a_m[col][row] = a_m[row][col]
     return np.linalg.inv(a_m) @ c_m
 
@@ -300,7 +256,7 @@ def polynom(x: np.ndarray, b: np.ndarray) -> np.ndarray:
     """
     result = b[0] + b[1] * x
     for i in range(2, b.size):
-        result += b[i] *  x**i
+        result += b[i] * x ** i
     return result
 
 
@@ -316,8 +272,8 @@ def distance_field_test():
     x, y = test_data()
     k_, b_ = linear_regression(x, y)
     print(f"y(x) = {k_:1.5} * x + {b_:1.5}")
-    k = np.linspace(-2.0, 2.0, 128, dtype=float)
-    b = np.linspace(-2.0, 2.0, 128, dtype=float)
+    k = np.linspace(-1000, 1000, 128, dtype=float)
+    b = np.linspace(-1000, 1000, 128, dtype=float)
     z = distance_field(x, y, k, b)
     plt.imshow(z, extent=[k.min(), k.max(), b.min(), b.max()])
     plt.plot(k_, b_, 'r*')
@@ -339,7 +295,7 @@ def linear_reg_test():
     x, y = test_data()
     k, b = linear_regression(x, y)
     print(f"y(x) = {k:1.5} * x + {b:1.5}")
-    plt.plot([0, 1.0], [b, k + b], 'g')
+    plt.plot([x[0], x[len(x) - 1]], [b, k + b], 'g')
     plt.plot(x, y, 'r.')
     plt.show()
 
@@ -392,6 +348,5 @@ if __name__ == "__main__":
     # print(n_linear_regression(data))
     # distance_field_test()
     # linear_reg_test()
-    # bi_linear_reg_test()
-    poly_reg_test()
-
+    bi_linear_reg_test()
+    # poly_reg_test()
