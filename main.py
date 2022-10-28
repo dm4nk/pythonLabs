@@ -1,13 +1,14 @@
 import random
-from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import cm
+from numpy.linalg import inv
 
 
 def test_data(k: float = 1.0, b: float = 0.1, rand_range: float = 10.0, n: int = 100) -> (np.array, np.array):
     return np.array([i / n for i in range(n)]), \
-           np.array([b + k * i + random.uniform(-rand_range * 0.5, rand_range * 0.5) for i in range(n)])
+           np.array([b + k * i ** 2 + random.uniform(-rand_range * 0.5, rand_range * 0.5) for i in range(n)])
 
 
 def test_data_2d(kx: float = -2.0, ky: float = 2.0, b: float = 12.0, rand_range: float = 100.0, n: int = 100) -> \
@@ -54,7 +55,7 @@ def distance_field(x: np.ndarray, y: np.ndarray, k: np.ndarray, b: np.ndarray) -
     return np.array([[distance_sum(x, y, k_i, b_i) for k_i in k.flat] for b_i in b.flat])
 
 
-def linear_regression(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
+def linear_regression(x: np.ndarray, y: np.ndarray) -> [float, float]:
     """
     Линейная регрессия.\n
     Основные формулы:\n
@@ -100,7 +101,7 @@ def linear_regression(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
     return k, b
 
 
-def bi_linear_regression(x: np.ndarray, y: np.ndarray, z: np.ndarray) -> Tuple[float, float, float]:
+def bi_linear_regression(x: np.ndarray, y: np.ndarray, z: np.ndarray) -> [float, float, float]:
     """
     Билинейная регрессия.\n
     Основные формулы:\n
@@ -225,27 +226,24 @@ def n_linear_regression(data_rows: np.ndarray) -> np.ndarray:
     return x_0 - np.linalg.inv(hessian) @ grad
 
 
-def poly_regression(x: np.ndarray, y: np.ndarray, order: int = 5) -> np.ndarray:
-    """
-    Полином: y = Σ_j x^j * bj\n
-    Отклонение: ei =  yi - Σ_j xi^j * bj\n
-    Минимизируем: Σ_i(yi - Σ_j xi^j * bj)^2 -> min\n
-    Σ_i(yi - Σ_j xi^j * bj)^2 = Σ_iyi^2 - 2 * yi * Σ_j xi^j * bj +(Σ_j xi^j * bj)^2\n
-    условие минимума:\n d/dbj Σ_i ei = d/dbj (Σ_i yi^2 - 2 * yi * Σ_j xi^j * bj +(Σ_j xi^j * bj)^2) = 0\n
-    :param x: массив значений по x
-    :param y: массив значений по y
-    :param order: порядок полинома
-    :return: набор коэффициентов bi полинома y = Σx^i*bi
-    """
-    a_m = np.zeros((order, order,), dtype=float)
-    c_m = np.zeros((order,), dtype=float)
-    n = x.size
+def poly_regression(x: np.ndarray, y: np.ndarray, order: int = 10) -> np.ndarray:
+    m = np.zeros((order, order), dtype=float)
+    last_row = np.zeros((order,), dtype=float)
+    n = len(x)
+
+    cached_x_1 = 1
+
     for row in range(order):
-        c_m[row] = np.sum(y * (x ** row)) / n
+        last_row[row] = np.sum(y * cached_x_1) / n
+
+        cached_x_2 = 1
         for col in range(row + 1):
-            a_m[row][col] = np.sum(x ** (col + row)) / n
-            a_m[col][row] = a_m[row][col]
-    return np.linalg.inv(a_m) @ c_m
+            m[col][row] = m[row][col] = np.sum(cached_x_1 * cached_x_2) / n
+            cached_x_2 *= x
+
+        cached_x_1 *= x
+
+    return inv(m) @ last_row
 
 
 def polynom(x: np.ndarray, b: np.ndarray) -> np.ndarray:
@@ -309,10 +307,13 @@ def bi_linear_reg_test():
        регрессионную плоскость вида:\n z = kx*x + ky*y + b\n
     :return:
     """
-    from matplotlib import cm
     x, y, z = test_data_2d()
     kx, ky, b = bi_linear_regression(x, y, z)
     print(f"z(x, y) = {kx:1.5} * x + {ky:1.5} * y + {b:1.5}")
+
+    # x, y, z = test_data_nd().T
+    # kx, ky, b = n_linear_regression(np.array([x, y, z])).T
+
     x_, y_ = np.meshgrid(np.linspace(np.min(x), np.max(x), 100), np.linspace(np.min(y), np.max(y), 100))
     z_ = kx * x_ + y_ * ky + b
     fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
@@ -333,7 +334,7 @@ def poly_reg_test():
        регрессионную кривую. Для построения кривой использовать метод polynom\n
     :return:
     """
-    x, y = test_data()
+    x, y = test_data(rand_range=1000, b=5)
     coefficients = poly_regression(x, y)
     y_ = polynom(x, coefficients)
     print(f"y(x) = {' + '.join(f'{coefficients[i]:.4} * x^{i}' for i in range(coefficients.size))}")
@@ -342,11 +343,41 @@ def poly_reg_test():
     plt.show()
 
 
+def test_data_nd(surf_settings: np.ndarray = np.array([1.0, 1.0, 1.0]), vals_range: float = 1.0,
+                 half_disp: float = 0.05, n_pts: int = 5) -> \
+        np.ndarray:
+    """
+    Генерирует плоскость вида z = kx*x + ky*x + b + dz, где dz - аддитивный шум с амплитудой half_disp
+    :param kx: наклон плоскости по x
+    :param ky: наклон плоскости по y
+    :param b: смещение по z
+    :param half_disp: амплитуда разброса данных
+    :param n: количество точек
+    :param x_step: шаг между соседними точками по х
+    :param y_step: шаг между соседними точками по y
+    :returns: кортеж значенией по x, y и z
+    """
+    import random
+    # surf_settings = [nx,ny,nz,d]
+
+    data = np.zeros((n_pts, surf_settings.size,), dtype=float)
+
+    for i in range(surf_settings.size - 1):
+        data[:, i] = np.array([random.uniform(0.0, vals_range) for k in range(n_pts)])
+        data[:, surf_settings.size - 1] += surf_settings[i] * data[:, i]
+
+    dz = np.array([random.uniform(-half_disp, half_disp) for i in range(n_pts)])
+
+    data[:, surf_settings.size - 1] += surf_settings[surf_settings.size - 1] + dz
+
+    return data
+
+
 if __name__ == "__main__":
     # data = test_data_nd()
     # print(data)
-    # print(n_linear_regression(data))
+    # print(n_linear_regression(test_data_nd()))
     # distance_field_test()
     # linear_reg_test()
-    bi_linear_reg_test()
-    # poly_reg_test()
+    # bi_linear_reg_test()
+    poly_reg_test()
