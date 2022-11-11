@@ -28,6 +28,17 @@ def test_data_2d(kx: float = -2.0, ky: float = 2.0, b: float = 12.0, rand_range:
     return x, y, x * kx + y * ky + dz
 
 
+def test_data_quad(surf_params=np.array([1, 2, 3, 1, 2, 3]), n: int = 100, rand_range: float = 100.0, b: float = 12.0):
+    x = np.array([random.uniform(0.0, n * 1.) for i in range(n)])
+    y = np.array([random.uniform(0.0, n * 1.) for i in range(n)])
+    dz = np.array([b + random.uniform(-rand_range * 0.5, rand_range * 0.5) for i in range(n)])
+
+    F = surf_params[0] * x ** 2 + surf_params[1] * y ** 2 + surf_params[2] * x * y + surf_params[3] * x + surf_params[
+        4] * y + surf_params[5]
+
+    return x, y, dz + F
+
+
 def distance_sum(x: np.ndarray, y: np.ndarray, k: float, b: float) -> float:
     """
     Вычисляет сумму квадратов расстояний от набора точек до линии вида y = k*x + b при фиксированных k и b
@@ -325,6 +336,36 @@ def bi_linear_reg_test():
     plt.show()
 
 
+def quadratic_linear_regression(x, y, z):
+    n = len(x)
+    base_arrays = [x * x, x * y, y * y, x, y, np.array([1.0])]
+    a = np.zeros((6, 6))
+    b = np.zeros(6)
+    for row in range(6):
+        b[row] = (base_arrays[row] * z).sum() / n
+        for col in range(row + 1):
+            a[col][row] = a[row][col] = (base_arrays[row] * base_arrays[col]).sum() / n
+    a[5][5] = n
+
+    return inv(a) @ b
+
+
+def quadratic_reg_test():
+    x, y, z = test_data_quad()
+    kx2, ky2, kxy, kx, ky, b = quadratic_linear_regression(x, y, z)
+    print(f"z(x, y) = {kx:1.5} * x + {ky:1.5} * y + {b:1.5}")
+
+    x_, y_ = np.meshgrid(np.linspace(np.min(x), np.max(x), 100), np.linspace(np.min(y), np.max(y), 100))
+    z_ = kx2 * x_ ** 2 + ky2 * y_ ** 2 + kxy * x_ * y_ + kx * x_ + y_ * ky + b
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+    ax.plot(x, y, z, 'r.')
+    surf = ax.plot_surface(x_, y_, z_, cmap=cm.coolwarm, linewidth=0, antialiased=False, edgecolor='none', alpha=0.5)
+    plt.xlabel("x")
+    plt.ylabel("y")
+    fig.colorbar(surf, shrink=0.5, aspect=5)
+    plt.show()
+
+
 def poly_reg_test():
     """
     Функция проверки работы метода полиномиальной регрессии:\n
@@ -380,4 +421,5 @@ if __name__ == "__main__":
     # distance_field_test()
     # linear_reg_test()
     # bi_linear_reg_test()
-    poly_reg_test()
+    # poly_reg_test()
+    quadratic_reg_test()
