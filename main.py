@@ -74,7 +74,7 @@ def fit_poly(X, Y, learning_rate=0.001, iterations=200):
 def show_results_poly(min=-2, max=8):
     x, y = test_poly_data()
     w = fit_poly(x, y)
-    print(f'b = {w[0]}\n w1 = {w[1]}\n w2 = {w[2]} w3 = {w[3]} w4 = {w[4]} w5 = {w[5]}')
+    print(f'b = {w[0]}\n w1 = {w[1]}\n w2 = {w[2]}\n w3 = {w[3]}\n w4 = {w[4]}\n w5 = {w[5]}\n')
     data = np.copy(x)
     data = np.column_stack((data, y))
     plt.scatter(mask(data, 0, 2, 1.), mask(data, 1, 2, 1.), color='b')
