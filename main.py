@@ -48,15 +48,10 @@ def show_results(min=-2, max=8):
     plt.show()
 
 
-def test_poly_data():
-    # [мат ожидание], [матрица ковариации], количество точек
-    X_plus = np.random.multivariate_normal([1, 1], [[0.5, -0.6], [-0.6, 0.5]], 100)
-    y_plus = np.ones((100, 1), dtype=int)
-    X_minus = np.random.multivariate_normal([2, 2], [[3, 0], [0, 3]], 200)
-    y_minus = np.zeros((200, 1), dtype=int)
-    X = np.concatenate((X_plus, X_minus))
-    Y = np.concatenate((y_plus, y_minus)).ravel()
-    return X, Y
+def test_poly_data(count1=100, count2=200):
+    x1 = np.random.multivariate_normal([1, 1], [[0.5, -0.6], [-0.6, 0.5]], count1)
+    x2 = np.random.multivariate_normal([2, 2], [[3, 0], [0, 3]], count2)
+    return np.vstack((x1, x2)), np.hstack((np.ones(count1), np.zeros(count2)))
 
 
 def fit_poly(X, Y, learning_rate=0.001, iterations=200):
@@ -76,24 +71,18 @@ def fit_poly(X, Y, learning_rate=0.001, iterations=200):
     return weights
 
 
-def show_results_poly():
+def show_results_poly(min=-2, max=8):
     x, y = test_poly_data()
-
     w = fit_poly(x, y)
-    print('b =', w[0], 'w1 =', w[1], 'w2 =', w[2], 'w3 =', w[3], 'w4 =', w[4], 'w5 =', w[5])
+    print(f'b = {w[0]}\n w1 = {w[1]}\n w2 = {w[2]} w3 = {w[3]} w4 = {w[4]} w5 = {w[5]}')
     data = np.copy(x)
     data = np.column_stack((data, y))
-    plt.scatter(data[data[:, 2] == 1.0][:, 0], data[data[:, 2] == 1.0][:, 1], color='b')
-    plt.scatter(data[data[:, 2] == 0.0][:, 0], data[data[:, 2] == 0.0][:, 1], color='r')
-    xmin, xmax = -1, 8
-    ymin, ymax = -1, 8
-    plt.xlim(xmin, xmax)
-    plt.ylim(ymin, ymax)
-    plt.ylabel(r'$x_2$')
-    plt.xlabel(r'$x_1$')
-
-    x1_list = np.linspace(-1.0, 8.0, 500)
-    x2_list = np.linspace(-1.0, 8.0, 500)
+    plt.scatter(mask(data, 0, 2, 1.), mask(data, 1, 2, 1.), color='b')
+    plt.scatter(mask(data, 0, 2, 0.), mask(data, 1, 2, 0.), color='r')
+    plt.xlim(min, max)
+    plt.ylim(min, max)
+    x1_list = np.linspace(min, max, 500)
+    x2_list = np.linspace(min, max, 500)
     X1, X2 = np.meshgrid(x1_list, x2_list)
     Z = np.sqrt(w[0] + w[1] * X1 + w[2] * X2 + w[3] * X1 ** 2 + w[4] * X1 * X2 + w[5] * X2 ** 2)
     plt.contour(X2, X1, Z, levels=[0.2])
