@@ -51,9 +51,9 @@ def show_results(min=-2, max=8):
 def test_poly_data():
     # [мат ожидание], [матрица ковариации], количество точек
     X_plus = np.random.multivariate_normal([1, 1], [[0.5, -0.6], [-0.6, 0.5]], 100)
-    y_plus = np.ones((100, 1), dtype=bool)
+    y_plus = np.ones((100, 1), dtype=int)
     X_minus = np.random.multivariate_normal([2, 2], [[3, 0], [0, 3]], 200)
-    y_minus = np.zeros((200, 1), dtype=bool)
+    y_minus = np.zeros((200, 1), dtype=int)
     X = np.concatenate((X_plus, X_minus))
     Y = np.concatenate((y_plus, y_minus)).ravel()
     return X, Y
@@ -83,8 +83,8 @@ def show_results_poly():
     print('b =', w[0], 'w1 =', w[1], 'w2 =', w[2], 'w3 =', w[3], 'w4 =', w[4], 'w5 =', w[5])
     data = np.copy(x)
     data = np.column_stack((data, y))
-    plt.scatter(data[data[:, 2] == 1.0][:, 0], data[data[:, 2] == 1.0][:, 1])
-    plt.scatter(data[data[:, 2] == 0.0][:, 0], data[data[:, 2] == 0.0][:, 1])
+    plt.scatter(data[data[:, 2] == 1.0][:, 0], data[data[:, 2] == 1.0][:, 1], color='b')
+    plt.scatter(data[data[:, 2] == 0.0][:, 0], data[data[:, 2] == 0.0][:, 1], color='r')
     xmin, xmax = -1, 8
     ymin, ymax = -1, 8
     plt.xlim(xmin, xmax)
@@ -101,6 +101,6 @@ def show_results_poly():
 
 
 if __name__ == '__main__':
-    show_results()
-    # show_results_poly()
+    # show_results()
+    show_results_poly()
     # test_data()
