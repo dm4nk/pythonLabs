@@ -51,9 +51,9 @@ def show_results(min=-2, max=8):
 def test_poly_data():
     # [мат ожидание], [матрица ковариации], количество точек
     X_plus = np.random.multivariate_normal([1, 1], [[0.5, -0.6], [-0.6, 0.5]], 100)
-    y_plus = np.full((100, 1), True)
+    y_plus = np.ones((100, 1), dtype=bool)
     X_minus = np.random.multivariate_normal([2, 2], [[3, 0], [0, 3]], 200)
-    y_minus = np.full((200, 1), False)
+    y_minus = np.zeros((200, 1), dtype=bool)
     X = np.concatenate((X_plus, X_minus))
     Y = np.concatenate((y_plus, y_minus)).ravel()
     return X, Y
