@@ -1,12 +1,11 @@
 import operator
-from calendar import timegm
 from time import gmtime
-
+from calendar import timegm
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_blobs
 from sklearn.metrics import silhouette_score
-from yellowbrick.cluster import KElbowVisualizer
+from yellowbrick.cluster import KElbowVisualizer, SilhouetteVisualizer
 
 
 def test_data(n: int = 300, centers: int = 5):
@@ -41,10 +40,20 @@ def define_best_number_of_classes_by_silhouette(X, min_value=2, max_value=10):
     #     .fit(X)
     #     .silhouette_score_ for hypothetical_clusters_num in range(min, max)
     # ]
-    scores = [
-        silhouette_score(X=X, labels=KMeans(n_clusters=hypothetical_clusters_num, n_init='auto').fit_predict(X)) for
-        hypothetical_clusters_num in range(min_value, max_value)
-    ]
+
+    scores = []
+    for hypothetical_clusters_num in range(2, 10):
+        sv = SilhouetteVisualizer(
+            KMeans(n_clusters=hypothetical_clusters_num, n_init='auto', random_state=1)
+        ).fit(X)
+
+        scores.append(sv.silhouette_score_)
+        sv.show()
+
+        # scores = [
+    #     silhouette_score(X=X, labels=KMeans(n_clusters=hypothetical_clusters_num, n_init='auto').fit_predict(X)) for
+    #     hypothetical_clusters_num in range(min_value, max_value)
+    # ]
     plot_line([i for i in range(min_value, max_value)], scores)
 
     index, value = max(enumerate(scores), key=operator.itemgetter(1))
